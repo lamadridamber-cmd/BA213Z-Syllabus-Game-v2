@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BA213Z Close the Books</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Libre+Franklin:wght@400;600;800&display=swap">
+<style>
+  /* Layout: a walnut records room at night. Five filing drawers, a brass countdown clock, and a code tray that fills as drawers open. */
+  :root{
+    --walnut:#1b1512; --panel:#261d18; --drawer:#3a2c22; --drawer-hi:#4a3829; --brass:#c9a45c; --brass-dim:#8a7140;
+    --paper:#f1e8d4; --paper-line:#d9ccb0; --ink:#221d17; --ink-soft:#5d5246; --cream:#efe4cc; --muted:#b9a88a;
+    --green:#3f7d5c; --green-ink:#24543c; --stamp:#b8432f; --overlay:rgba(12,9,7,.82);
+    --f-display:"Special Elite","Courier New",Courier,monospace;
+    --f-body:"Libre Franklin",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--walnut);color:var(--cream);font-family:var(--f-body);font-size:16px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  [hidden]{display:none!important}
+  button{font-family:inherit}
+  :focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+
+  /* Header */
+  header{border-bottom:1px solid var(--brass-dim);background:var(--panel)}
+  header .wrap{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;padding-block:16px}
+  .brand .eyebrow{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .brand h1{margin:2px 0 0;font-family:var(--f-display);font-weight:400;font-size:clamp(1.5rem,4.5vw,2.3rem);color:var(--brass);letter-spacing:.02em;text-wrap:balance}
+  .hud{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+  .clock{text-align:center}
+  .clock .lbl,.tray .lbl{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .clock .t{font-family:var(--f-display);font-size:2rem;color:var(--brass);font-variant-numeric:tabular-nums;line-height:1.1}
+  .clock.urgent .t{color:var(--stamp)}
+  .slots{display:flex;gap:6px;margin-top:4px}
+  .slot{width:34px;height:42px;border:2px solid var(--brass-dim);border-radius:4px;display:grid;place-items:center;
+    font-family:var(--f-display);font-size:1.4rem;color:var(--brass);background:var(--walnut)}
+  .slot.filled{border-color:var(--brass);background:#2e2318}
+
+  main .wrap{padding-block:24px 56px}
+  .panel{background:var(--panel);border:1px solid #3b2e24;border-radius:10px;padding:24px}
+  .panel h2{font-family:var(--f-display);font-weight:400;color:var(--brass);margin:0 0 8px;font-size:1.6rem;text-wrap:balance}
+  .panel p{max-width:65ch}
+  .rules{padding-left:20px;max-width:68ch} .rules li{margin:6px 0}
+  .rules strong{color:var(--brass)}
+  label{display:block;font-weight:600;margin:16px 0 6px}
+  input[type=text]{width:100%;max-width:360px;padding:10px 12px;font-size:1rem;border-radius:6px;border:1px solid var(--brass-dim);
+    background:var(--walnut);color:var(--cream)}
+  .btn{display:inline-block;border:0;border-radius:6px;padding:12px 22px;font-size:1rem;font-weight:800;cursor:pointer;
+    background:var(--brass);color:var(--walnut);letter-spacing:.02em}
+  .btn:hover{background:#d9b56c}
+  .btn.ghost{background:transparent;color:var(--brass);border:1px solid var(--brass)}
+  .status{min-height:1.5em;color:var(--muted);margin:0 0 14px}
+
+  /* Cabinet */
+  .cabinet{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;background:#120e0c;padding:12px;border-radius:10px;border:1px solid #3b2e24}
+  .drawer{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;min-height:210px;padding:16px 10px 14px;border:0;border-radius:6px;
+    background:linear-gradient(180deg,var(--drawer-hi),var(--drawer));color:var(--cream);cursor:pointer;text-align:center;
+    box-shadow:inset 0 0 0 1px #5a4532, inset 0 -6px 0 rgba(0,0,0,.25);transition:transform .15s ease}
+  .drawer:hover:not(:disabled){transform:translateY(-2px)}
+  .drawer .tab{background:var(--paper);color:var(--ink);font-family:var(--f-display);font-size:.95rem;padding:6px 8px;border-radius:2px;
+    width:100%;min-height:52px;display:grid;place-items:center;line-height:1.2;box-shadow:0 1px 0 rgba(0,0,0,.4)}
+  .drawer .num{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .drawer .sub{font-size:.82rem;color:var(--muted);line-height:1.3}
+  .drawer .handle{width:60%;height:10px;border-radius:5px;background:linear-gradient(180deg,#e2c27e,var(--brass-dim));margin-top:auto}
+  .drawer .lock{font-family:var(--f-display);font-size:.85rem;letter-spacing:.08em;color:var(--brass)}
+  .drawer.open{background:linear-gradient(180deg,#2c3a30,#223027);box-shadow:inset 0 0 0 1px var(--green);cursor:default}
+  .drawer.open .lock{color:#9fd3b4}
+  .drawer.open .digit{font-family:var(--f-display);font-size:2rem;color:var(--paper);line-height:1}
+  .fees{margin-top:14px;color:var(--muted);font-size:.92rem}
+
+  /* Vault */
+  .vault{margin-top:20px;text-align:center}
+  .vault input{font-family:var(--f-display);font-size:2rem;letter-spacing:.5em;text-align:center;width:100%;max-width:280px;padding:10px 0 10px .5em;
+    border-radius:6px;border:2px solid var(--brass);background:var(--walnut);color:var(--brass)}
+  .vault .row{display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:12px}
+  .vault .msg{min-height:1.5em;color:var(--stamp);margin-top:10px}
+  .shake{animation:shake .35s}
+  @keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}}
+
+  /* Memo modal */
+  .overlay{position:fixed;inset:0;background:var(--overlay);display:flex;align-items:center;justify-content:center;z-index:20;
+    padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .memo{position:relative;background:var(--paper);color:var(--ink);width:100%;max-width:680px;max-height:92vh;overflow:auto;border-radius:4px;padding:26px 28px;
+    background-image:repeating-linear-gradient(transparent 0 31px,var(--paper-line) 31px 32px);box-shadow:0 18px 50px rgba(0,0,0,.55)}
+  .memo .head{font-family:var(--f-display);font-size:.9rem;color:var(--ink-soft);display:grid;grid-template-columns:auto 1fr;gap:2px 12px;border-bottom:2px solid var(--ink);padding-bottom:8px}
+  .memo .head b{color:var(--ink);font-weight:400}
+  .memo h3{font-size:clamp(1.1rem,3vw,1.35rem);line-height:1.35;margin:18px 0 16px;text-wrap:balance}
+  .opts{display:grid;gap:10px}
+  .opt{text-align:left;padding:12px 14px;border-radius:4px;border:2px solid var(--ink);background:rgba(255,255,255,.55);color:var(--ink);font-size:1rem;cursor:pointer;line-height:1.35}
+  .opt:hover:not(:disabled){background:#fff}
+  .opt:disabled{cursor:default}
+  .opt.correct{background:#dcefe3;border-color:var(--green-ink)}
+  .opt.incorrect{background:#f6dcd6;border-color:var(--stamp)}
+  .feedback{margin-top:16px;padding:12px 14px;border-left:4px solid var(--ink);background:rgba(255,255,255,.6)}
+  .stamp{display:inline-block;font-family:var(--f-display);font-size:1.1rem;letter-spacing:.08em;padding:4px 12px;border:3px solid currentColor;border-radius:4px;transform:rotate(-3deg);margin-bottom:8px}
+  .stamp.ok{color:var(--green-ink)} .stamp.bad{color:var(--stamp)}
+  .memo .actions{text-align:right;margin-top:14px}
+  .memo .btn{background:var(--ink);color:var(--paper)}
+  .memo .btn:hover{background:#3a3128}
+
+  /* Results */
+  .cert{background:var(--paper);color:var(--ink);border-radius:4px;padding:22px;margin:18px 0;text-align:center;border:6px double var(--brass-dim);max-width:560px}
+  .cert .name{font-family:var(--f-display);font-size:1.6rem;margin:6px 0}
+  .cert .code{font-family:var(--f-display);font-size:1.6rem;letter-spacing:.1em;color:var(--green-ink)}
+  .cert small{color:var(--ink-soft)}
+  .review{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}
+  .review li{border-left:4px solid var(--green);background:#221a15;padding:10px 14px;border-radius:0 6px 6px 0}
+  .review li.miss{border-color:var(--stamp)}
+  .review .q{font-weight:600} .review .a{color:var(--muted);font-size:.93rem}
+
+  @media (max-width:820px){ .cabinet{grid-template-columns:repeat(2,minmax(0,1fr))} .drawer{min-height:180px} }
+  @media (max-width:420px){ .cabinet{grid-template-columns:1fr} .drawer{min-height:0} .slot{width:30px;height:38px} }
+  @media (prefers-reduced-motion:reduce){ .drawer{transition:none} .shake{animation:none} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <div class="eyebrow">BA213Z Principles of Managerial Accounting · Winter 2027</div>
+      <h1>Close the Books</h1>
+    </div>
+    <div class="hud">
+      <div class="clock" id="clock"><div class="lbl">Auditors arrive in</div><div class="t" id="clockT">--:--</div></div>
+      <div class="tray"><div class="lbl">Vault code</div><div class="slots" id="slots"></div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <!-- INTRO -->
+    <section id="intro" class="panel">
+      <h2>It's month-end, and you're locked in the records room.</h2>
+      <p>The auditors arrive soon. To close the books and get out, unlock all five filing drawers, collect the vault code, and open the vault before time runs out.</p>
+      <ul class="rules">
+        <li>Each drawer is locked by one question about the BA213Z syllabus. A correct answer opens the drawer and reveals one digit of the vault code.</li>
+        <li>A wrong answer charges a <strong>late fee</strong> of <span class="feeTxt"></span> off the clock. The drawer stays locked, and you'll get a different question when you try it again.</li>
+        <li>The clock pauses while you read the feedback after each answer.</li>
+        <li>Open all five drawers, enter the code, and escape with time left to earn your completion code.</li>
+        <li>Play as many times as you like. Each attempt draws new questions.</li>
+      </ul>
+      <label for="studentName">Your name (shown on your completion certificate)</label>
+      <input type="text" id="studentName" autocomplete="name" placeholder="First and last name">
+      <p style="margin-top:18px"><button class="btn" id="startBtn">Start the clock</button></p>
+    </section>
+
+    <!-- GAME -->
+    <section id="game" hidden>
+      <p class="status" id="status" aria-live="polite"></p>
+      <div class="cabinet" id="cabinet"></div>
+      <p class="fees" id="fees"></p>
+      <div class="vault panel" id="vault" hidden>
+        <h2>All five drawers are open.</h2>
+        <p style="margin:0 auto">Enter the 5-digit code from your tray to open the vault and close the books.</p>
+        <div class="row">
+          <label for="codeIn" style="position:absolute;left:-9999px">Vault code</label>
+          <input type="text" id="codeIn" inputmode="numeric" maxlength="5" autocomplete="off">
+          <button class="btn" id="codeBtn">Open the vault</button>
+        </div>
+        <div class="msg" id="codeMsg" aria-live="assertive"></div>
+      </div>
+    </section>
+
+    <!-- RESULTS -->
+    <section id="results" class="panel" hidden aria-live="polite"></section>
+  </div>
+</main>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="memo" role="dialog" aria-modal="true" aria-labelledby="qText">
+    <div class="head">
+      <span>TO:</span><b id="mTo"></b>
+      <span>RE:</span><b id="mRe"></b>
+    </div>
+    <h3 id="qText"></h3>
+    <div class="opts" id="qOpts"></div>
+    <div class="feedback" id="qFeedback" hidden aria-live="assertive"></div>
+    <div class="actions" id="qActions" hidden><button class="btn" id="continueBtn">Back to the drawers</button></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   INSTRUCTOR SETTINGS: edit these to fit your course
+   ========================================================= */
+const CONFIG = {
+  timeLimitSec: 360,              // starting clock: 6 minutes
+  lateFeeSec: 60,                 // time taken off the clock for each wrong answer
+  completionCode: "CVP-BREAKEVEN" // change each term so codes don't carry over
+};
+
+const LOCKS = [
+  { id: "A", name: "Meet Your Controller", sub: "Your instructor and getting help" },
+  { id: "B", name: "Cost of Admission",    sub: "Materials, tech, and study tools" },
+  { id: "C", name: "Budget Review",        sub: "How your grade is built" },
+  { id: "D", name: "Variance Report",      sub: "Deadlines, pacing, and late work" },
+  { id: "E", name: "Code of Conduct",      sub: "AI, communication, and expectations" }
+];
+
+/* QUESTION BANK
+   lock = which drawer it opens, a = correct answer, wrong = three distractors,
+   why = shown after answering */
+const QUESTIONS = [
+  {"id": "A1", "lock": "A", "q": "It's 6 pm Friday and you're stuck on homework due Sunday. What's your smartest move?", "a": "Post it in Virtual Study Hall, since weekend email replies are for emergencies", "wrong": ["Email your instructor and wait, since she replies within 24 hours, weekends included", "Email Online Learning support, since they answer homework questions on weekends", "Skip it for now, because a placeholder score will cover the missing work"], "why": "Weekday replies come within 24 hours. On weekends, she replies to emergencies only, but classmates in Virtual Study Hall can often help sooner."},
+  {"id": "A2", "lock": "A", "q": "Which of these questions belongs in Virtual Study Hall instead of a private email to your instructor?", "a": "How to set up a Chapter 6 break-even problem", "wrong": ["Why surgery will make you miss the Week 7 hard deadline", "Why your Midterm score seems lower than expected", "A request for a Friday Zoom appointment"], "why": "Homework questions help the whole class, so post them where everyone can see them. Personal matters go to your instructor by email."},
+  {"id": "A3", "lock": "A", "q": "Your Canvas login stops working the night before a deadline. Who should you contact first?", "a": "Online Learning (phone or email)", "wrong": ["Cengage technical support (phone or chat)", "Your instructor, by office voicemail", "Classmates in the Virtual Study Hall forum"], "why": "Canvas problems go to Online Learning. Cengage support handles Cengage, not Canvas."},
+  {"id": "A4", "lock": "A", "q": "Which statement about office hours is accurate?", "a": "They're on Zoom, and Fridays are by appointment", "wrong": ["They're in person in AC2663, and Zoom is by appointment only", "They run Monday through Friday from 10:00 to 12:00 on Zoom", "They're on Tuesday and Thursday only, with no Friday option"], "why": "Monday/Wednesday hours are 12:00–1:00, and Tuesday/Thursday hours are 10:00–12:00. She's also in her office, AC2663, during office hours."},
+  {"id": "A5", "lock": "A", "q": "Which question is BA213Z designed to help you answer?", "a": "How many units must we sell to break even?", "wrong": ["How should revenue be reported to outside investors?", "How much income tax does the company owe this year?", "Does the year-end balance sheet balance?"], "why": "BA213Z is about how managers use accounting information, mostly costs, to plan and make decisions. Computing a break-even point is a learning outcome."},
+  {"id": "A6", "lock": "A", "q": "Which skill is NOT one of the BA213Z learning outcomes?", "a": "Preparing individual income tax returns", "wrong": ["Computing a break-even point", "Preparing flexible budgets and performing overhead analysis", "Making capital budgeting calculations"], "why": "The outcomes cover cost behavior, product costing, budgets, relevant costs, segment reports, and capital budgeting. Taxes aren't one of them."},
+  {"id": "A7", "lock": "A", "q": "Something will keep you from doing next week's coursework. What does the syllabus expect from you?", "a": "Tell your instructor before the deadline, then catch up by the next hard deadline", "wrong": ["Tell her after the deadline and send documentation so she can remove the placeholder", "Do nothing, because unlimited attempts mean late work is always accepted", "Ask a classmate to post your Ethics Discussion for you"], "why": "Under Our Responsibilities, students let the instructor know about issues before a deadline, not after."},
+  {"id": "A8", "lock": "A", "q": "Which statement about contacting your instructor is true?", "a": "Email and office voicemail both work, with weekday replies in 24 hours", "wrong": ["Texting her cell phone is the fastest way to reach her on weekends", "She checks voicemail only during scheduled office hours", "She replies to every message within 24 hours, seven days a week"], "why": "On weekends, she replies to emergencies only."},
+  {"id": "B1", "lock": "B", "q": "Your Cengage Unlimited subscription from BA111 ends March 1. The BA213Z Final is due March 18. What should you do?", "a": "Renew or extend so your access lasts through the Final", "wrong": ["Nothing, since access continues until the term ends", "Plan to take the Final in Canvas instead of Cengage", "Ask your instructor to extend your Cengage access"], "why": "The Final is in Cengage, so your subscription has to cover the whole term."},
+  {"id": "B2", "lock": "B", "q": "Your financial aid won't arrive until well after Week 1. How can you meet the Friday-of-Week-1 Cengage requirement?", "a": "Join now with free temporary access, then buy before 10 days pass", "wrong": ["Wait until your aid arrives, since aid delays waive the requirement", "Join with temporary access, since it lasts the whole term", "Ask your instructor for an extension to Week 3"], "why": "Temporary access lasts 10 days, so plan to buy before it expires."},
+  {"id": "B3", "lock": "B", "q": "You don't have Cengage Unlimited yet. Which purchase gives you the best value?", "a": "A 4-month subscription bought directly from Cengage", "wrong": ["A 4-month subscription bought at the MHCC Bookstore", "A 2-year subscription bought at the MHCC Bookstore", "The .99 printed textbook rental on its own"], "why": "A 4-month subscription is the best value for one term, and buying directly from Cengage costs about 25% less than the Bookstore."},
+  {"id": "B4", "lock": "B", "q": "Why does this course require the Excel app?", "a": "The Data Analytics cases in the homework are Excel-based", "wrong": ["The Midterm is an Excel file you upload to Canvas", "Ethics Discussions are submitted as spreadsheets", "The Adaptive Study Plans run inside an Excel workbook"], "why": "Excel is free for MHCC students through Microsoft 365."},
+  {"id": "B5", "lock": "B", "q": "What does a Cengage Unlimited subscription include?", "a": "The eBook, your coursework, and the rest of the library", "wrong": ["Your coursework only, since the eBook costs extra", "The eBook only, since coursework access is sold separately", "A printed textbook shipped to you for free"], "why": "The printed rental is an optional $9.99 add-on."},
+  {"id": "B6", "lock": "B", "q": "You want practice before the Midterm that won't affect your grade. Which option fits?", "a": "Cengage Study Tools, like flash cards and the study guide", "wrong": ["Answer keys for the graded homework, in Study Tools", "Extra credit problems your instructor posts in Canvas", "Draft answers posted in an Ethics Discussion forum"], "why": "Study Tools also include crossword puzzles and other games. Your instructor generally doesn't offer extra credit."},
+  {"id": "B7", "lock": "B", "q": "Where are the Excel workbooks that go with your instructor's YouTube walkthrough videos?", "a": "In the Weekly Module overviews", "wrong": ["Inside Cengage, under Study Tools", "Only in the YouTube video descriptions", "In an email you get each Monday"], "why": "Look for \"Amber's Videos\" under the On Canvas study tools."},
+  {"id": "B8", "lock": "B", "q": "Where do you complete the Midterm and Final Exams?", "a": "In Cengage", "wrong": ["In Canvas, as a file upload", "In Canvas, as a timed quiz", "By email to your instructor"], "why": "Study plans, homework, and exams are in Cengage. Ethics Discussions are in Canvas."},
+  {"id": "C1", "lock": "C", "q": "Which is worth more: all of the Chapter Homework, or both exams plus all the Adaptive Study Plans combined?", "a": "All of the Chapter Homework (230 vs. 180 points)", "wrong": ["Both exams plus the study plans (180 vs. 130 points)", "They're worth exactly the same", "It depends on how many attempts you use"], "why": "Homework is 230 points. The exams (50 + 50) and study plans (80) add up to 180."},
+  {"id": "C2", "lock": "C", "q": "Priya earns every possible point except that she skips all the Adaptive Study Plans. What's her final grade?", "a": "B (370 points)", "wrong": ["A (still above 90%)", "C (330 points)", "B, but only if she aces the Final"], "why": "450 − 80 = 370 points, which is in the B range (360–404). Skipping study plans costs her a letter grade."},
+  {"id": "C3", "lock": "C", "q": "Jordan earns every point except on the exams, where he scores 25 of 50 on the Midterm and 25 of 50 on the Final. What's his final grade?", "a": "B, 5 points short of an A", "wrong": ["A, because exams are only 22% of the grade", "C, because he failed both exams", "B, 25 points short of an A"], "why": "450 − 25 − 25 = 400 points. An A starts at 405."},
+  {"id": "C4", "lock": "C", "q": "What's the most points you can lose over the whole term and still earn an A?", "a": "45 points", "wrong": ["40 points", "50 points", "90 points"], "why": "An A starts at 405 points, and 450 − 405 = 45."},
+  {"id": "C5", "lock": "C", "q": "You skip the Data Analytics case in your Chapter 8 homework. Which part of your grade loses points?", "a": "Chapter Homework", "wrong": ["A separate Data Analytics category", "The Midterm, since it covers Chapter 8", "Nothing, because the cases are optional practice"], "why": "The Data Analytics Skill Builders are included in Chapter Homework."},
+  {"id": "C6", "lock": "C", "q": "Which missing assignment gets a 10% placeholder score after its suggested deadline?", "a": "A Chapter Homework assignment", "wrong": ["An Ethics Discussion post", "Both homework and discussions", "Neither, since missing work is recorded as zero"], "why": "Placeholders apply to every assignment except discussions, and your real score replaces them once you submit."},
+  {"id": "C7", "lock": "C", "q": "It's Week 9 and your grade is lower than you want. Which plan fits the syllabus?", "a": "Finish open work and use unlimited attempts on homework before Week 10 ends", "wrong": ["Ask for extra credit, which she offers when a grade is borderline", "Redo the Midterm, which reopens for retakes during Week 9", "Post the Ethics Discussions you missed for half credit"], "why": "Extra credit generally isn't offered, earlier work closed at the Week 3 and Week 7 hard deadlines, and discussions aren't accepted late."},
+  {"id": "C8", "lock": "C", "q": "Ethics Discussions are now worth 40 points. How do they compare with the exams?", "a": "All four together almost equal the Midterm (40 vs. 50)", "wrong": ["Together they're worth more than both exams combined", "Together they're worth less than one Adaptive Study Plan", "They're participation only and don't affect your grade"], "why": "Ethics is 9% of your grade, and late posts aren't accepted, so every discussion counts."},
+  {"id": "D1", "lock": "D", "q": "The Syllabus Quiz Game is due Friday, January 8. What else has to be done by the end of that Friday?", "a": "Post your introduction and join our class on Cengage", "wrong": ["Finish the Chapter 1 Homework and Chapter 1 Ethics", "Complete the Student Information Survey and buy the printed book", "Nothing else, since the rest of Week 1 is due Sunday"], "why": "These are the Week 1 participation requirements. The Chapter 1 work and the survey are due Sunday."},
+  {"id": "D2", "lock": "D", "q": "It's Wednesday of Week 7. You haven't done the Chapter 9 homework (due Week 5) or the Midterm (due Week 6). When does that work become unavailable?", "a": "This Sunday, at the end of Week 7", "wrong": ["It already has, since work closes on its due date", "At the end of Week 10", "Never, since attempts are unlimited"], "why": "Work stays open until the next hard deadline at the end of Week 3, 7, or 10. Contact your instructor before Sunday."},
+  {"id": "D3", "lock": "D", "q": "Your Chapter 8 Ethics post is due Sunday, January 31, and you'll be traveling that weekend. What's your best move?", "a": "Post it before you leave, since discussions can't be late", "wrong": ["Post it by the Week 7 hard deadline instead", "Skip it, since a 10% placeholder will hold your spot", "Post it the following Sunday for half credit"], "why": "Discussions have no late window and no placeholder."},
+  {"id": "D4", "lock": "D", "q": "By the end of Week 4, Sam has finished the Chapter 1 study plan, the Chapter 1 homework, and the survey, but nothing for Chapters 2 or 6. Could Sam be dropped?", "a": "Yes, because most of the work due by Week 3 isn't done", "wrong": ["No, because the check only looks at Chapter 1 work", "No, because Sam has until the Week 7 hard deadline", "Only if Sam also misses the Midterm in Week 6"], "why": "The Week 4 Engagement Check defines \"little progress\" as not completing most activities due by the end of Week 3."},
+  {"id": "D5", "lock": "D", "q": "Which statement about the hard deadlines is correct?", "a": "At the ends of Weeks 3, 7, and 10, unfinished work closes", "wrong": ["Each assignment closes as soon as its own due date passes", "The hard deadlines apply only to the two exams", "At the ends of Weeks 4, 8, and 11, unfinished work closes"], "why": "Following the Course Summary keeps you well ahead of them."},
+  {"id": "D6", "lock": "D", "q": "The Chapter 12 homework is due Sunday, March 14, at the end of Week 10. The Final is due Thursday, March 18. What happens to unfinished Chapter 12 homework?", "a": "It closes on March 14, before the Final is due", "wrong": ["It stays open until the Final is due on March 18", "It closes together with the Final on March 18", "It stays open, since homework has unlimited attempts"], "why": "March 14 is the last hard deadline, so finish your homework first and then focus on the Final."},
+  {"id": "D7", "lock": "D", "q": "What can happen if you don't complete the Week 1 participation requirements?", "a": "You can be dropped so a wait-listed student can take your seat", "wrong": ["You get a 10% placeholder until you finish all of them", "Your Cengage access is suspended until you finish them", "It counts against you only at the Week 4 Engagement Check"], "why": "Check the registration calendar for drop and refund deadlines."},
+  {"id": "D8", "lock": "D", "q": "The Midterm is due Sunday, February 14, at the end of Week 6. Which plan sets you up best?", "a": "Do the chapter work on schedule, then focus on the exam", "wrong": ["Skip the homework, since the Midterm tests that material", "Leave the Midterm until Week 7, since it's still open then", "Start the Midterm chapters during Week 6"], "why": "The study plans and homework are your exam preparation. The Midterm stays open until the Week 7 hard deadline, but falling behind puts all your other work at risk too."},
+  {"id": "E1", "lock": "E", "q": "Which use of AI crosses the line in this course?", "a": "Having AI write your Ethics post, then editing it lightly", "wrong": ["Asking AI to explain variances, then checking the explanation against the textbook", "Having AI proofread your post and noting that in one sentence", "Using AI to quiz yourself before the Midterm"], "why": "Using AI as a substitute for your own original work isn't acceptable, even if you edit what it gives you."},
+  {"id": "E2", "lock": "E", "q": "You used Gemini to check the grammar in your discussion post. What should your acknowledgment look like?", "a": "One sentence saying you used Gemini to proofread", "wrong": ["Nothing, since proofreading doesn't count as AI use", "A copy of the full chat transcript", "An APA citation in a reference list"], "why": "A simple one-sentence description is all you need."},
+  {"id": "E3", "lock": "E", "q": "AI gave you a formula, and you used it in your homework without checking it. Which AI rule did you break?", "a": "AI contributions must be true (checked for accuracy)", "wrong": ["AI contributions must be attributed (credited to AI)", "AI may be used only for proofreading your work", "You may use only the AI tools that MHCC provides"], "why": "You're responsible for checking that what AI tells you is accurate."},
+  {"id": "E4", "lock": "E", "q": "The AI section says spelling and grammar matter less than your thinking, but the Communication Guidelines ask for error-free writing. How do these fit together?", "a": "Thinking matters most, but write professionally everywhere", "wrong": ["Spelling and grammar don't count in discussion posts", "Only emails to your instructor need to be error-free", "Use AI to rewrite everything so it has no errors"], "why": "Write as if you're communicating with your boss: clearly, legibly, and in your own voice."},
+  {"id": "E5", "lock": "E", "q": "You're emailing your instructor about a grade. Which approach fits the Communication Guidelines?", "a": "Write it as you would to your boss: clear and error-free", "wrong": ["Keep it casual, since email is an informal channel", "Write it in all caps so she knows it's urgent", "Skip the greeting and get straight to your point"], "why": "The course is a chance to practice workplace communication."},
+  {"id": "E6", "lock": "E", "q": "You strongly disagree with a classmate's Ethics post. What fits the course guidelines?", "a": "Reply respectfully and explain your reasoning", "wrong": ["Reply bluntly, since ethics questions have one right answer", "Report the post so it gets deleted", "Ignore it and post your view in Virtual Study Hall"], "why": "Use respect and courtesy. Only offensive or inflammatory posts are deleted."},
+  {"id": "E7", "lock": "E", "q": "Which of these is one of YOUR responsibilities under Our Responsibilities?", "a": "Telling your instructor about problems before a deadline", "wrong": ["Replying to every classmate's post within 24 hours", "Attending at least one office hour every week", "Finishing all of the coursework during Week 1"], "why": "You're also expected to work on time, manage your time proactively, and follow the Student Code of Conduct."},
+  {"id": "E8", "lock": "E", "q": "The syllabus or schedule changes in the middle of the term. How will you find out?", "a": "Course announcements and email, so check both", "wrong": ["Your instructor mails you a printed copy", "Changes are only announced at the hard deadlines", "It can't change once Week 1 is over"], "why": "See the Notice of Content Change in the syllabus."}
+];
+
+/* =========================================================
+   GAME ENGINE: no edits needed below this line
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const SEEN_KEY = "ba213z-escape-seen";
+let st = null, current = null, tick = null;
+
+function loadSeen(){ try { return JSON.parse(localStorage.getItem(SEEN_KEY)) || []; } catch(e){ return []; } }
+function saveSeen(ids){ try { localStorage.setItem(SEEN_KEY, JSON.stringify(ids.slice(-40))); } catch(e){} }
+function shuffle(arr){ const a = arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+function fmt(sec){ sec=Math.max(0,Math.round(sec)); return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }
+function feeText(){ const m=Math.floor(CONFIG.lateFeeSec/60), s=CONFIG.lateFeeSec%60; return (m?m+" minute"+(m>1?"s":""):"")+(m&&s?" ":"")+(s?s+" seconds":""); }
+
+function drawQuestion(lockId){
+  const seen = new Set(loadSeen());
+  const pool = QUESTIONS.filter(q => q.lock === lockId && !st.used.has(q.id));
+  const base = pool.length ? pool : QUESTIONS.filter(q => q.lock === lockId);
+  const fresh = base.filter(q => !seen.has(q.id));
+  return pick(fresh.length ? fresh : base);
+}
+
+function start(){
+  st = {
+    locks: LOCKS.map(l => ({ ...l, open:false, digit: Math.floor(Math.random()*10) })),
+    timeLeft: CONFIG.timeLimitSec, running: true, used: new Set(), log: [], fees: 0, done: false
+  };
+  $("#intro").hidden = true; $("#results").hidden = true; $("#game").hidden = false; $("#vault").hidden = true;
+  $("#codeIn").value = ""; $("#codeMsg").textContent = "";
+  renderAll();
+  clearInterval(tick);
+  tick = setInterval(() => {
+    if (!st.running || st.done) return;
+    st.timeLeft -= 1; renderClock();
+    if (st.timeLeft <= 0) timeUp();
+  }, 1000);
+  document.querySelector(".drawer:not(:disabled)").focus();
+}
+
+function renderAll(){ renderClock(); renderSlots(); renderCabinet(); renderStatus(); }
+function renderClock(){
+  $("#clockT").textContent = st ? fmt(st.timeLeft) : fmt(CONFIG.timeLimitSec);
+  $("#clock").classList.toggle("urgent", !!st && st.timeLeft <= 60);
+}
+function renderSlots(){
+  $("#slots").innerHTML = (st ? st.locks : LOCKS).map((l,i) =>
+    `<div class="slot ${st && l.open ? "filled" : ""}" aria-label="Digit ${i+1}: ${st && l.open ? l.digit : "unknown"}">${st && l.open ? l.digit : "·"}</div>`).join("");
+}
+function renderStatus(){
+  const open = st.locks.filter(l => l.open).length;
+  $("#status").textContent = open === 5 ? "Every drawer is open. Enter the code to open the vault."
+    : `${open} of 5 drawers open. Choose a locked drawer.`;
+  $("#fees").textContent = st.fees ? `Late fees charged: ${st.fees} (−${fmt(st.fees*CONFIG.lateFeeSec)})` : "";
+}
+function renderCabinet(){
+  const cab = $("#cabinet"); cab.innerHTML = "";
+  st.locks.forEach((l,i) => {
+    const b = document.createElement("button");
+    b.className = "drawer" + (l.open ? " open" : "");
+    b.innerHTML = `<span class="num">Drawer ${i+1}</span><span class="tab">${esc(l.name)}</span><span class="sub">${esc(l.sub)}</span>` +
+      (l.open ? `<span class="lock">OPEN · DIGIT ${i+1}</span><span class="digit">${l.digit}</span>` : `<span class="lock">LOCKED</span>`) +
+      `<span class="handle" aria-hidden="true"></span>`;
+    b.setAttribute("aria-label", `Drawer ${i+1}, ${l.name}, ${l.open ? "open, digit " + l.digit : "locked"}`);
+    if (l.open) b.disabled = true; else b.addEventListener("click", () => openDrawer(l, i));
+    cab.appendChild(b);
+  });
+}
+
+function openDrawer(lock, idx){
+  if (st.done) return;
+  const q = drawQuestion(lock.id); st.used.add(q.id);
+  const seen = loadSeen(); seen.push(q.id); saveSeen(seen);
+  current = { lock, idx, q };
+  $("#mTo").textContent = "Records Room, Drawer " + (idx+1);
+  $("#mRe").textContent = lock.name;
+  $("#qText").textContent = q.q;
+  const opts = $("#qOpts"); opts.innerHTML = "";
+  shuffle([q.a, ...q.wrong]).forEach(text => {
+    const o = document.createElement("button"); o.className = "opt"; o.textContent = text;
+    o.addEventListener("click", () => answer(text, o)); opts.appendChild(o);
+  });
+  $("#qFeedback").hidden = true; $("#qActions").hidden = true;
+  $("#overlay").hidden = false; opts.firstChild.focus();
+}
+
+function answer(text, btn){
+  const { lock, idx, q } = current, ok = text === q.a;
+  st.running = false;
+  document.querySelectorAll(".opt").forEach(o => { o.disabled = true; if (o.textContent === q.a) o.classList.add("correct"); });
+  if (!ok) btn.classList.add("incorrect");
+  st.log.push({ lock: lock.name, q: q.q, a: q.a, ok });
+  const fb = $("#qFeedback");
+  if (ok){
+    lock.open = true;
+    fb.innerHTML = `<span class="stamp ok">APPROVED</span><br>The drawer slides open. Inside is digit ${idx+1} of the vault code: <strong>${lock.digit}</strong>.<br>${esc(q.why)}`;
+  } else {
+    st.fees += 1; st.timeLeft -= CONFIG.lateFeeSec;
+    fb.innerHTML = `<span class="stamp bad">LATE FEE −${fmt(CONFIG.lateFeeSec)}</span><br>The correct answer is: ${esc(q.a)}. ${esc(q.why)}<br><em>The drawer stays locked. Try it again for a new question.</em>`;
+  }
+  fb.hidden = false; $("#qActions").hidden = false;
+  $("#continueBtn").textContent = st.timeLeft <= 0 ? "See what happened" : "Back to the drawers";
+  $("#continueBtn").focus();
+  renderClock(); renderSlots();
+}
+
+function closeMemo(){
+  $("#overlay").hidden = true;
+  if (st.timeLeft <= 0) return timeUp();
+  st.running = true;
+  renderCabinet(); renderStatus();
+  if (st.locks.every(l => l.open)){ $("#vault").hidden = false; $("#codeIn").focus(); }
+  else { const next = document.querySelector(".drawer:not(:disabled)"); if (next) next.focus(); }
+}
+
+function tryCode(){
+  const entered = $("#codeIn").value.replace(/\D/g,"");
+  const code = st.locks.map(l => l.digit).join("");
+  if (entered === code) return finish(true);
+  $("#codeMsg").textContent = "That code doesn't match. Check the digits in your vault-code tray, in order from drawer 1 to 5.";
+  const v = $("#codeIn"); v.classList.remove("shake"); void v.offsetWidth; v.classList.add("shake");
+}
+
+function timeUp(){ st.timeLeft = 0; renderClock(); $("#overlay").hidden = true; finish(false); }
+
+function finish(won){
+  st.done = true; st.running = false; clearInterval(tick);
+  const name = $("#studentName").value.trim() || "Student";
+  const correct = st.log.filter(x => x.ok).length;
+  const review = st.log.map(x => `<li class="${x.ok ? "" : "miss"}"><div class="q">${x.ok ? "✓" : "✗"} ${esc(x.lock)}: ${esc(x.q)}</div><div class="a">Answer: ${esc(x.a)}</div></li>`).join("");
+  $("#results").innerHTML = `
+    <h2>${won ? "Books closed. You escaped!" : "The auditors arrived first."}</h2>
+    <p>${won
+      ? `You opened all five drawers and the vault with <strong>${fmt(st.timeLeft)}</strong> left on the clock, after ${st.fees} late fee${st.fees===1?"":"s"}.`
+      : `Time ran out with ${st.locks.filter(l=>l.open).length} of 5 drawers open. Each attempt draws new questions, so review the syllabus and try again.`}</p>
+    ${won ? `<div class="cert">
+        <div>Certificate of Completion · BA213Z Syllabus Escape Room</div>
+        <div class="name">${esc(name)}</div>
+        <div>Escaped with ${fmt(st.timeLeft)} remaining · ${correct} of ${st.log.length} answers correct</div>
+        <div><small>${esc(new Date().toLocaleString())}</small></div>
+        <div style="margin-top:12px">Completion code</div>
+        <div class="code">${esc(CONFIG.completionCode)}</div>
+        <small>Enter this code in the Canvas Syllabus Quiz, or submit a screenshot of this certificate.</small>
+      </div>` : ""}
+    <h2 style="font-size:1.2rem;margin-top:18px">Review your answers</h2>
+    <ul class="review">${review || "<li>No questions answered.</li>"}</ul>
+    <p style="margin-top:20px"><button class="btn" id="againBtn">${won ? "Play again" : "Try again"}</button></p>`;
+  $("#game").hidden = true; $("#results").hidden = false;
+  $("#againBtn").addEventListener("click", start);
+  $("#results").scrollIntoView({ behavior: "smooth" });
+}
+
+document.querySelectorAll(".feeTxt").forEach(el => el.textContent = feeText());
+renderClock(); renderSlots();
+$("#startBtn").addEventListener("click", start);
+$("#continueBtn").addEventListener("click", closeMemo);
+$("#codeBtn").addEventListener("click", tryCode);
+$("#codeIn").addEventListener("keydown", e => { if (e.key === "Enter") tryCode(); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("#overlay").hidden && !$("#qActions").hidden) closeMemo();
+});
+</script>
+</body>
+</html>
